@@ -1,50 +1,98 @@
 #include <iostream>
 #include <chrono>
+#include <vector>
 using namespace std;
 
-//simple bubble sort
-void bubbleSort(int arr[], int n) {
-    for (int i = 0; i < n - 1; i++) {            
-        for (int j = 0; j < n - i - 1; j++) {    
-            if (arr[j] > arr[j + 1]) {           
-                int temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
-            }
-        }
+// ==================== HEAP SORT ====================
+void heapify(int arr[], int n, int i) {
+    int largest = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+
+    if (left < n && arr[left] > arr[largest])
+        largest = left;
+
+    if (right < n && arr[right] > arr[largest])
+        largest = right;
+
+    if (largest != i) {
+        swap(arr[i], arr[largest]);
+        heapify(arr, n, largest);
     }
 }
 
-//quick sort
-int partitionAscending(int arr[], int low, int high) {
-    int pivot = arr[high];
-    int i = low - 1;
+void heapSort(int arr[], int n) {
+    // Build max heap
+    for (int i = n / 2 - 1; i >= 0; i--)
+        heapify(arr, n, i);
 
-    for (int j = low; j < high; j++) {
-        if (arr[j] <= pivot) {
+    // Extract elements from heap
+    for (int i = n - 1; i > 0; i--) {
+        swap(arr[0], arr[i]);
+        heapify(arr, i, 0);
+    }
+}
+
+// ==================== MERGE SORT ====================
+void merge(int arr[], int left, int mid, int right) {
+    int n1 = mid - left + 1;
+    int n2 = right - mid;
+
+    // Create temp arrays
+    int* L = new int[n1];
+    int* R = new int[n2];
+
+    // Copy data to temp arrays
+    for (int i = 0; i < n1; i++)
+        L[i] = arr[left + i];
+    for (int j = 0; j < n2; j++)
+        R[j] = arr[mid + 1 + j];
+
+    // Merge the temp arrays back
+    int i = 0, j = 0, k = left;
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
             i++;
-            int temp = arr[i];
-            arr[i] = arr[j];
-            arr[j] = temp;
+        } else {
+            arr[k] = R[j];
+            j++;
         }
+        k++;
     }
-    int temp = arr[i + 1];
-    arr[i + 1] = arr[high];
-    arr[high] = temp;
 
-    return i + 1;
+    // Copy remaining elements
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+
+    delete[] L;
+    delete[] R;
 }
 
-void quickSortAscending(int arr[], int low, int high) {
-    if (low < high) {
-        int pi = partitionAscending(arr, low, high);
-        quickSortAscending(arr, low, pi - 1);
-        quickSortAscending(arr, pi + 1, high);
+void mergeSort(int arr[], int left, int right) {
+    if (left < right) {
+        int mid = left + (right - left) / 2;
+
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
     }
 }
 
+// Wrapper for merge sort
+void mergeSortWrapper(int arr[], int n) {
+    mergeSort(arr, 0, n - 1);
+}
 
-//print Array function
+// ==================== UTILITY FUNCTIONS ====================
 void printArray(const int arr[], int n) {
     for (int i = 0; i < n; i++) {
         cout << arr[i] << " ";
@@ -52,84 +100,95 @@ void printArray(const int arr[], int n) {
     cout << endl;
 }
 
-int main() {
-    int n = 1000;
-
-    // Arrays
-    int ascArrQS[1000], descArrQS[1000];
-    int ascArrBS[1000], descArrBS[1000];
-
-    // Fill arrays
+// Copy arrays to avoid modifying originals
+void copyArray(int dest[], const int src[], int n) {
     for (int i = 0; i < n; i++) {
-        ascArrQS[i] = ascArrBS[i] = i + 1;      // 1, 2, 3, ...
-        descArrQS[i] = descArrBS[i] = n - i;    // 10, 9, 8, ...
+        dest[i] = src[i];
     }
+}
+
+int main() {
+    const int n = 1000;
+
+    // Base arrays
+    int ascArrBase[n], descArrBase[n];
+
+    // Fill base arrays
+    for (int i = 0; i < n; i++) {
+        ascArrBase[i] = i + 1;      // 1, 2, 3, ..., 1000
+        descArrBase[i] = n - i;     // 1000, 999, 998, ..., 1
+    }
+
+    // Working arrays (copies)
+    int ascArrHS[n], descArrHS[n];
+    int ascArrMS[n], descArrMS[n];
 
     int choice;
 
-    cout << "===== Sorting Menu =====\n";
-    cout << "1. Quick Sort array Worst case (Input array in ascending order)\n";
-    cout << "2. Quick Sort array Best case (Input array in descending order)\n";
-    cout << "3. Bubble Sort array (Input array in ascending order)\n";
-    cout << "4. Bubble Sort array (Input array in descending order)\n";
+    cout << "===== Heap Sort vs Merge Sort Comparison =====\n";
+    cout << "1. Heap Sort (Input array in descending order)\n";
+    cout << "2. Heap Sort (Input array in ascending order)\n";
+    cout << "3. Merge Sort (Input array in descending order)\n";
+    cout << "4. Merge Sort (Input array in ascending order)\n";
     cout << "Enter choice: ";
     cin >> choice;
 
-    std::chrono::high_resolution_clock::time_point start, end;
-    std::chrono::microseconds duration(0);
+    chrono::high_resolution_clock::time_point start, end;
+    chrono::microseconds duration(0);
 
     switch (choice) {
-
-        // QUICK SORT on ascending array
         case 1:
-            cout << "\nOriginal ascending array:\n";
-            printArray(ascArrQS, n);
+            copyArray(descArrHS, descArrBase, n);
+            cout << "\nOriginal descending array (first 20 elements):\n";
+            printArray(descArrHS, min(20,n));
 
             start = chrono::high_resolution_clock::now();
-            quickSortAscending(ascArrQS, 0, n - 1);
+            heapSort(descArrHS, n);
             end = chrono::high_resolution_clock::now();
 
-            cout << "\nAfter Quick Sort:\n";
-            printArray(ascArrQS, n);
+            cout << "\nAfter Heap Sort (first 20 elements):\n";
+            printArray(descArrHS, min(20,n));
             break;
 
-        // QUICK SORT on descending array
         case 2:
-            cout << "\nOriginal descending array:\n";
-            printArray(descArrQS, n);
+            copyArray(ascArrHS, ascArrBase, n);
+            cout << "\nOriginal ascending array (first 20 elements):\n";
+            printArray(ascArrHS, min(20,n));
 
             start = chrono::high_resolution_clock::now();
-            quickSortAscending(descArrQS, 0, n - 1);
+            heapSort(ascArrHS, n);
             end = chrono::high_resolution_clock::now();
 
-            cout << "\nAfter Quick Sort (converted to ASC):\n";
-            printArray(descArrQS, n);
+            cout << "\nAfter Heap Sort (first 20 elements):\n";
+            printArray(ascArrHS, min(20,n));
             break;
 
-        // BUBBLE SORT on ascending array
+        // MERGE SORT on descending array
         case 3:
-            cout << "\nOriginal ascending array:\n";
-            printArray(ascArrBS, n);
+            copyArray(descArrMS, descArrBase, n);
+            cout << "\nOriginal descending array (first 20 elements):\n";
+            printArray(descArrMS, min(20,n));
 
             start = chrono::high_resolution_clock::now();
-            bubbleSort(ascArrBS, n);
+            mergeSortWrapper(descArrMS, n);
             end = chrono::high_resolution_clock::now();
 
-            cout << "\nAfter Bubble Sort:\n";
-            printArray(ascArrBS, n);
+            cout << "\nAfter Merge Sort (first 20 elements):\n";
+            printArray(descArrMS, min(20,n));
             break;
 
-        // BUBBLE SORT on descending array
+        // MERGE SORT on ascending array
         case 4:
-            cout << "\nOriginal descending array:\n";
-            printArray(descArrBS, n);
+            copyArray(ascArrMS, ascArrBase, n);
+            cout << "\nOriginal ascending array (first 20 elements):\n";
+            printArray(ascArrMS, min(20,n));
 
             start = chrono::high_resolution_clock::now();
-            bubbleSort(descArrBS, n);
+            mergeSortWrapper(ascArrMS, n);
             end = chrono::high_resolution_clock::now();
 
-            cout << "\nAfter Bubble Sort (converted to ASC):\n";
-            printArray(descArrBS, n);
+            cout << "\nAfter Merge Sort (first 20 elements):\n";
+            printArray(ascArrMS, min(20,n));
             break;
 
         default:
@@ -137,16 +196,9 @@ int main() {
             return 0;
     }
 
-    // Compute duration only if start/end were set
-    if (end > start) {
+    if (choice >= 1 && choice <= 4) {
         duration = chrono::duration_cast<chrono::microseconds>(end - start);
-        cout << "\nTime taken (sorting only): " << duration.count() << " microseconds\n";
-    } else {
-        cout << "\nTiming not recorded.\n";
+        cout << "\nTime taken: " << duration.count() << " microseconds\n";
     }
-
     return 0;
 }
-
-
-
